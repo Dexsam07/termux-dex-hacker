@@ -1,234 +1,225 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# ============================================
-# DEX-HACKER Ultimate Termux Environment
-# Author: Dex Shyam Tech | @dex_shyam_42
-# GitHub: https://github.com/Dexsam07/termux-dex-hacker
-# ============================================
 
-set -e
+# ==============================================
+# DEX-HACKER TERMINAL – BY DEX SHYAM TECH
+# KHATARNAK LEVEL PRO MAX
+# ==============================================
 
-# --- Directories & files ---
+# ---- Immutable Developer Branding ----
+readonly DEV_NAME="Dex Shyam Tech"
+readonly INSTA="@dex_shyam_42"
+readonly PROJECT="termux-dex-hacker"
+readonly REPO_URL="https://github.com/Dexsam07/termux-dex-hacker"
+readonly SONG_URL="https://files.catbox.moe/e4fmn4.mp3"
+
+# ---- Directories & Files ----
 DEX_DIR="$HOME/.dex_hacker"
-PASSWD_FILE="$DEX_DIR/.passwd"
-CONFIG_FILE="$DEX_DIR/config"
-FLAG_FILE="$DEX_DIR/played"
-MAIN_SCRIPT="$PREFIX/bin/dex-hacker"
-CUSTOM_MP3_URL="https://files.catbox.moe/e4fmn4.mp3"
+PASS_FILE="$DEX_DIR/password.txt"
+CONFIG_FILE="$DEX_DIR/config.cfg"
+mkdir -p "$DEX_DIR"
 
-# --- Colors (for dangerous look) ---
-RED='\033[1;31m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+# ---- Colors ----
+RED='\033[1;91m'
+GREEN='\033[1;92m'
+YELLOW='\033[1;93m'
+BLUE='\033[1;94m'
+PURPLE='\033[1;95m'
+CYAN='\033[1;96m'
+WHITE='\033[1;97m'
+RESET='\033[0m'
+BOLD='\033[1m'
 
-# --- Banner ASCII (smaller for phone) ---
-banner() {
-    echo -e "${RED}"
-    echo "██████╗ ███████╗██╗  ██╗     ██╗  ██╗ █████╗  ██████╗██╗  ██╗███████╗██████╗ "
-    echo "██╔══██╗██╔════╝╚██╗██╔╝     ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗"
-    echo "██║  ██║█████╗   ╚███╔╝█████╗███████║███████║██║     █████╔╝ █████╗  ██████╔╝"
-    echo "██║  ██║██╔══╝   ██╔██╗╚════╝██╔══██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗"
-    echo "██████╔╝███████╗██╔╝ ██╗     ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║"
-    echo "╚═════╝ ╚══════╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝"
-    echo -e "${NC}"
-    echo -e "${CYAN}         ⚡ DEX-HACKER v1.0 | @dex_shyam_42 ⚡${NC}"
-}
-
-# --- Setup function (runs only once) ---
-setup() {
-    echo -e "${YELLOW}[*] First run detected. Setting up DEX-HACKER environment...${NC}"
-    mkdir -p "$DEX_DIR"
-    
-    # Install required packages
-    pkg update -y && pkg upgrade -y
-    pkg install mpv yt-dlp ffmpeg termux-api nano git -y
-    
-    # Storage permission
-    termux-setup-storage 2>/dev/null || true
-    
-    # Set password
-    if [[ ! -f "$PASSWD_FILE" ]]; then
-        echo -e "${RED}Set your master password (used for dex-lock):${NC}"
-        read -s user_pass
-        echo "$user_pass" > "$PASSWD_FILE"
-        echo -e "${GREEN}[+] Password stored in $PASSWD_FILE (you can nano it later)${NC}"
+# ---- Check Dependencies ----
+deps=(mpv yt-dlp curl)
+missing=()
+for dep in "${deps[@]}"; do
+    if ! command -v "$dep" &>/dev/null; then
+        missing+=("$dep")
     fi
-    
-    # Default config
-    cat > "$CONFIG_FILE" <<EOF
-NAME="User"
-COLOR="$RED"
-SUPPORT="yes"
-LAST_SUPPORT_CHECK=$(date +%s)
-EOF
-    
-    # Disable default Termux welcome message
-    touch "$HOME/.hushlogin"
-    # Also clear motd if exists
-    if [[ -f "$PREFIX/etc/motd" ]]; then
-        mv "$PREFIX/etc/motd" "$PREFIX/etc/motd.bak"
-    fi
-    
-    # Create main script that will be sourced in .bashrc
-    cat > "$MAIN_SCRIPT" <<'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
-# DEX-HACKER core script – sourced at every shell start
+done
+if [ ${#missing[@]} -gt 0 ]; then
+    echo -e "${YELLOW}[!] Missing: ${missing[*]}${RESET}"
+    echo -e "${GREEN}[+] Installing...${RESET}"
+    pkg update -y && pkg install -y mpv yt-dlp curl
+fi
 
-DEX_DIR="$HOME/.dex_hacker"
-PASSWD_FILE="$DEX_DIR/.passwd"
-CONFIG_FILE="$DEX_DIR/config"
-FLAG_FILE="$DEX_DIR/played"
-CUSTOM_MP3_URL="https://files.catbox.moe/e4fmn4.mp3"
-
-source "$CONFIG_FILE"
-
-# --- Check support expiry ---
-check_support() {
-    if [[ "$SUPPORT" == "no" ]]; then
-        current=$(date +%s)
-        last=$LAST_SUPPORT_CHECK
-        diff=$(( (current - last) / 86400 ))
-        if [[ $diff -ge 3 ]]; then
-            echo -e "\033[1;31m[!] Support disabled for 3 days. This script is now LOCKED.\033[0m"
-            echo "Contact @dex_shyam_42 on Instagram to reactivate."
-            exit 1
-        fi
+# ---- Password System ----
+init_password() {
+    if [ ! -f "$PASS_FILE" ]; then
+        echo -e "${CYAN}[!] First run – set your system password:${RESET}"
+        read -s -p "New password: " user_pass
+        echo
+        echo -n "$user_pass" > "$PASS_FILE"
+        echo -e "${GREEN}[✓] Password stored securely in $PASS_FILE${RESET}"
+        echo -e "${YELLOW}⚠️  If you forget it, type: nano $PASS_FILE${RESET}"
     fi
 }
 
-# --- Play the custom MP3 once per session ---
-play_mp3_once() {
-    if [[ -z "$DEX_HACKER_PLAYED" ]]; then
-        export DEX_HACKER_PLAYED=1
-        (mpv --no-video --volume=70 "$CUSTOM_MP3_URL" >/dev/null 2>&1 &)
-    fi
-}
-
-# --- Hacking loading animation (5 seconds) ---
-loading() {
-    echo -e "\033[1;32m[+] Loading DEX-HACKER kernel modules...\033[0m"
-    for i in {1..5}; do
-        echo -ne "\033[1;33m[===      ] $((i*20))% Hack the planet...\r\033[0m"
-        sleep 1
-    done
-    echo -e "\n\033[1;32m[✔] System ready.\033[0m"
-}
-
-# --- Real-time prompt with clock (updated every second) ---
-prompt_command() {
-    PS1="\[\033[1;31m\]DEX-HACKER\[\033[0m\]@\[\033[1;36m\]\t\[\033[0m\] \[\033[1;33m\]\w\[\033[0m\] \$ "
-}
-PROMPT_COMMAND=prompt_command
-
-# --- Custom tools ---
-playsong() {
-    [[ -z "$1" ]] && echo "Usage: playsong \"song name\"" && return 1
-    yt-dlp --no-check-certificate -f bestaudio --extract-audio --audio-format mp3 --audio-quality 0 -o "temp_song.%(ext)s" "ytsearch1:$1"
-    mpv --no-video temp_song.*
-    rm temp_song.*
-}
-
-playmp3() {
-    mpv --no-video "$CUSTOM_MP3_URL"
-}
-
-dex-lock() {
-    echo -e "\033[1;31m[!] Terminal locked. Enter password to unlock:\033[0m"
-    read -s input_pass
-    stored_pass=$(cat "$PASSWD_FILE")
-    if [[ "$input_pass" == "$stored_pass" ]]; then
-        echo -e "\033[1;32m[✔] Unlocked.\033[0m"
-    else
-        echo -e "\033[1;31m[✘] Wrong password. Exiting.\033[0m"
+check_password() {
+    local stored_pass=$(cat "$PASS_FILE")
+    read -s -p "${CYAN}🔐 Enter system password: ${RESET}" input_pass
+    echo
+    if [[ "$input_pass" != "$stored_pass" ]]; then
+        echo -e "${RED}❌ Wrong password! Exiting.${RESET}"
         exit 1
     fi
 }
 
-dex-support() {
-    current_support=$(grep SUPPORT "$CONFIG_FILE" | cut -d'=' -f2 | tr -d '"')
-    if [[ "$current_support" == "yes" ]]; then
-        sed -i 's/SUPPORT="yes"/SUPPORT="no"/' "$CONFIG_FILE"
-        echo -e "\033[1;33mSupport disabled. You have 3 days before script locks.\033[0m"
-    else
-        sed -i 's/SUPPORT="no"/SUPPORT="yes"/' "$CONFIG_FILE"
-        # reset last check
-        sed -i "s/LAST_SUPPORT_CHECK=.*/LAST_SUPPORT_CHECK=$(date +%s)/" "$CONFIG_FILE"
-        echo -e "\033[1;32mSupport enabled. Thanks!\033[0m"
-    fi
-    source "$CONFIG_FILE"
+# ---- Loading Animation (5 sec + song) ----
+loading_screen() {
+    clear
+    echo -e "${RED}"
+    cat << "EOF"
+██████╗ ███████╗██╗  ██╗     ██╗  ██╗ █████╗  ██████╗██╗  ██╗███████╗██████╗ 
+██╔══██╗██╔════╝╚██╗██╔╝     ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+██║  ██║█████╗   ╚███╔╝█████╗███████║███████║██║     █████╔╝ █████╗  ██████╔╝
+██║  ██║██╔══╝   ██╔██╗╚════╝██╔══██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+██████╔╝███████╗██╔╝ ██╗     ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+╚═════╝ ╚══════╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+EOF
+    echo -e "${RESET}"
+    echo -e "${CYAN}⚡ DEVELOPER : $DEV_NAME${RESET}"
+    echo -e "${PURPLE}📱 INSTAGRAM : $INSTA${RESET}"
+    echo -e "${YELLOW}🔗 REPO : $REPO_URL${RESET}"
+    echo -e "${BLUE}⏱️  REAL-TIME : $(date '+%H:%M:%S %d-%b-%Y')${RESET}"
+    echo -e "${RED}🔥 LOADING KHATARNAK HACKER TOOLS... 🔥${RESET}"
+    
+    # Play MP3 in background
+    mpv --no-video --really-quiet "$SONG_URL" &>/dev/null &
+    MPV_PID=$!
+    
+    # 5 second hacker spinner
+    spin=('█░░░' '░█░░' '░░█░' '░░░█')
+    for i in {1..5}; do
+        printf "\r${YELLOW}[${spin[$((i%4))]}] Hacking terminal loading... %d sec${RESET}" $((5-i))
+        sleep 1
+    done
+    printf "\r${GREEN}[✓] System Ready!                 ${RESET}\n"
+    sleep 0.5
+    kill $MPV_PID 2>/dev/null
 }
 
-dex-storage() {
-    echo -e "\033[1;36m==== Storage Info ====\033[0m"
-    df -h /data/data/com.termux/files/home
-    echo -e "\n\033[1;36mInternal shared storage:\033[0m"
-    if [[ -d ~/storage/shared ]]; then
-        df -h ~/storage/shared
-    else
-        echo "Run 'termux-setup-storage' first."
-    fi
+# ---- Real-time Prompt Branding ----
+set_prompt() {
+    PS1="\[\e[1;91m\]╭──(DEX-HACKER@$(date +%H:%M:%S))\[\e[0m\]\n\[\e[1;92m\]╰─➤ \[\e[0m\]"
 }
 
-dex-run() {
-    file="$1"
-    [[ -z "$file" ]] && echo "Usage: dex-run <filename>" && return 1
-    if [[ ! -f "$file" ]]; then
-        echo "File not found."
-        return 1
-    fi
-    ext="${file##*.}"
-    case "$ext" in
-        py) python3 "$file" ;;
-        html) termux-open "$file" ;;
-        js) node "$file" 2>/dev/null || echo "Install nodejs: pkg install nodejs" ;;
-        sh) bash "$file" ;;
-        *) echo "Unsupported extension." ;;
+# ---- Tools & Functions ----
+show_storage() {
+    echo -e "${CYAN}📂 STORAGE INFO (Phone/PC):${RESET}"
+    df -h | grep -E '(/dev/block|/data|/storage|C:)'
+}
+
+network_speed() {
+    echo -e "${YELLOW}📡 Measuring network speed (approx)...${RESET}"
+    start=$(date +%s%N)
+    curl -s -o /dev/null http://speedtest.tele2.net/10MB.zip
+    end=$(date +%s%N)
+    elapsed=$((($end - $start)/1000000))
+    speed=$((10*1000/elapsed))
+    echo -e "${GREEN}⚡ Speed: ~$speed MB/s (10MB downloaded in ${elapsed}ms)${RESET}"
+}
+
+youtube_song() {
+    echo -e "${CYAN}🎵 Enter song name:${RESET}"
+    read -r song
+    echo -e "${GREEN}▶️ Playing (AD-FREE)...${RESET}"
+    yt-dlp -f bestaudio --extract-audio --audio-format mp3 --audio-quality 0 -o - "ytsearch1:$song" | mpv --no-video -
+}
+
+ai_tools_menu() {
+    echo -e "${PURPLE}🤖 FREE AI TOOLS MENU:${RESET}"
+    echo "1. ChatGPT (Web)"
+    echo "2. Google Bard (Gemini)"
+    echo "3. Microsoft Copilot"
+    echo "4. Research Tool (Wikipedia/DuckDuckGo)"
+    read -p "Choose [1-4]: " ai_choice
+    case $ai_choice in
+        1) termux-open-url "https://chat.openai.com" ;;
+        2) termux-open-url "https://gemini.google.com" ;;
+        3) termux-open-url "https://copilot.microsoft.com" ;;
+        4) 
+            read -p "🔍 Search query: " query
+            curl -s "https://en.wikipedia.org/api/rest_v1/page/summary/$(echo $query | sed 's/ /_/g')" | grep -o '"extract":"[^"]*"' | cut -d'"' -f4
+            ;;
+        *) echo -e "${RED}Invalid${RESET}" ;;
     esac
 }
 
-dex-passwd() {
-    echo -e "\033[1;33mEnter NEW master password:\033[0m"
-    read -s newpass
-    echo "$newpass" > "$PASSWD_FILE"
-    echo -e "\033[1;32mPassword updated.\033[0m"
-}
-
-dex-update() {
-    cd "$HOME/termux-dex-hacker" 2>/dev/null || { echo "Repo not found at ~/termux-dex-hacker"; return 1; }
-    git pull
-    ./install.sh
-    echo "Update done. Restart Termux."
-}
-
-# --- Export functions so they are available in shell ---
-export -f playsong playmp3 dex-lock dex-support dex-storage dex-run dex-passwd dex-update
-
-# --- Main startup sequence (only for interactive login) ---
-if [[ $- == *i* ]]; then
-    check_support
-    banner
-    loading
-    play_mp3_once
-fi
-EOF
-
-    chmod +x "$MAIN_SCRIPT"
-    
-    # Add sourcing to .bashrc (idempotent)
-    if ! grep -q "source $MAIN_SCRIPT" "$HOME/.bashrc"; then
-        echo "source $MAIN_SCRIPT" >> "$HOME/.bashrc"
+run_custom_file() {
+    echo -e "${CYAN}📁 Enter file path (HTML/JS/PY):${RESET}"
+    read -r filepath
+    if [[ "$filepath" == *.html ]]; then
+        termux-open "$filepath"
+    elif [[ "$filepath" == *.js ]]; then
+        node "$filepath"
+    elif [[ "$filepath" == *.py ]]; then
+        python "$filepath"
+    else
+        echo -e "${RED}Unsupported file type${RESET}"
     fi
-    
-    echo -e "${GREEN}[✔] Setup complete! Restart Termux or run 'source ~/.bashrc'${NC}"
 }
 
-# --- If first run, call setup ---
-if [[ ! -d "$DEX_DIR" ]]; then
-    setup
-else
-    # Normal execution when script is sourced? Actually we just source the main script in .bashrc.
-    # But this install script is only run once.
-    echo -e "${CYAN}DEX-HACKER already installed. Run 'dex-update' to update.${NC}"
-fi
+developer_support() {
+    echo -e "${YELLOW}🤝 Developer Support Option${RESET}"
+    read -p "Do you want support from $DEV_NAME? (yes/no): " support
+    if [[ "$support" == "yes" ]]; then
+        echo -e "${GREEN}✅ You have active support. Contact $INSTA${RESET}"
+    else
+        echo -e "${RED}❌ Support rejected. Developer has cut your job access.${RESET}"
+        echo -e "${RED}You will be logged out in 5 seconds.${RESET}"
+        sleep 5
+        exit 1
+    fi
+}
+
+# ---- Main Menu ----
+main_menu() {
+    while true; do
+        clear
+        echo -e "${RED}══════════════════════════════════════════${RESET}"
+        echo -e "${BOLD}    DEX-HACKER CONTROL PANEL – $DEV_NAME${RESET}"
+        echo -e "${RED}══════════════════════════════════════════${RESET}"
+        echo -e "${CYAN}1) 🎵 YouTube Song Player (Ad-Free)${RESET}"
+        echo -e "${CYAN}2) 🌐 Network Speed Test${RESET}"
+        echo -e "${CYAN}3) 🤖 AI Tools + Research${RESET}"
+        echo -e "${CYAN}4) 🛠️ Run Custom File (HTML/JS/PY)${RESET}"
+        echo -e "${CYAN}5) 💾 Show Storage Info${RESET}"
+        echo -e "${CYAN}6) 🔑 Change System Password${RESET}"
+        echo -e "${CYAN}7) 🆘 Developer Support (Yes/No)${RESET}"
+        echo -e "${RED}8) 🚪 Exit${RESET}"
+        echo -e "${RED}══════════════════════════════════════════${RESET}"
+        read -p "Choose option: " opt
+        case $opt in
+            1) youtube_song ;;
+            2) network_speed ;;
+            3) ai_tools_menu ;;
+            4) run_custom_file ;;
+            5) show_storage ;;
+            6) 
+                echo -e "${YELLOW}Change password:${RESET}"
+                read -s -p "New password: " newpass
+                echo -n "$newpass" > "$PASS_FILE"
+                echo -e "${GREEN}Password updated.${RESET}"
+                ;;
+            7) developer_support ;;
+            8) echo -e "${GREEN}Stay dangerous! DEX-HACKER signing off.${RESET}"; exit 0 ;;
+            *) echo -e "${RED}Invalid option${RESET}" ;;
+        esac
+        read -p "Press Enter to continue..."
+    done
+}
+
+# ---- Main Execution ----
+init_password
+check_password
+loading_screen
+set_prompt
+clear
+echo -e "${GREEN}✅ Type 'menu' to open control panel anytime.${RESET}"
+echo -e "${CYAN}⚡ Fast commands: ytsong 'name' | speedtest | storage${RESET}"
+alias ytsong=youtube_song
+alias speedtest=network_speed
+alias storage=show_storage
+alias menu=main_menu
+main_menu
